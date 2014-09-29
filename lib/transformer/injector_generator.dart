@@ -370,24 +370,28 @@ class _Processor {
         "'${path.url.basenameWithoutExtension(id.path)}"
         "_generated_type_factory_maps.dart' show setStaticReflectorAsDefault;");
 
-    FunctionExpression main = unit.declarations.where((d) =>
-        d is FunctionDeclaration && d.name.toString() == 'main')
-        .first.functionExpression;
-    var body = main.body;
-    if (body is BlockFunctionBody) {
-      var location = body.beginToken.end;
-      transaction.edit(location, location, '\n  setStaticReflectorAsDefault();');
-    } else if (body is ExpressionFunctionBody) {
-      transaction.edit(body.beginToken.offset, body.endToken.end,
-          "{\n  setStaticReflectorAsDefault();\n"
-          "  return ${body.expression};\n}");
-    } // EmptyFunctionBody can only appear as abstract methods and constructors.
+    var mainMethods = unit.declarations.where((d) =>
+        d is FunctionDeclaration && d.name.toString() == 'main');
+    
+    if(mainMethods.length > 0){
+      FunctionExpression main = 
+          mainMethods.first.functionExpression;
+          var body = main.body;
+          if (body is BlockFunctionBody) {
+            var location = body.beginToken.end;
+            transaction.edit(location, location, '\n  setStaticReflectorAsDefault();');
+          } else if (body is ExpressionFunctionBody) {
+            transaction.edit(body.beginToken.offset, body.endToken.end,
+                "{\n  setStaticReflectorAsDefault();\n"
+                "  return ${body.expression};\n}");
+          } // EmptyFunctionBody can only appear as abstract methods and constructors.
 
-    var printer = transaction.commit();
-    var url = id.path.startsWith('lib/') ?
-        'package:${id.package}/${id.path.substring(4)}' : id.path;
-    printer.build(url);
-    transform.addOutput(new Asset.fromString(id, printer.text));
+          var printer = transaction.commit();
+          var url = id.path.startsWith('lib/') ?
+              'package:${id.package}/${id.path.substring(4)}' : id.path;
+          printer.build(url);
+          transform.addOutput(new Asset.fromString(id, printer.text));
+    }   
   }
 }
 
